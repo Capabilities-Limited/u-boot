@@ -9,6 +9,7 @@
  */
 
 #include <asm-generic/pe.h>
+#include <asm/asm.h>
 
 #if __riscv_xlen == 64
 #define SIZE_LONG	8
@@ -181,21 +182,21 @@ section_table:
 	.align		12
 	.globl		_start
 _start:
-	addi		sp, sp, -(SIZE_LONG * 3)
-	SAVE_LONG(a0, 0)
-	SAVE_LONG(a1, 1)
-	SAVE_LONG(ra, 2)
+	add PREG(sp), PREG(sp), -(SZREG * 3)
+	REG_S PREG(a0), (0)(PREG(sp))
+	REG_S PREG(a1), (1*SZREG)(PREG(sp))
+	REG_S PREG(ra), (2*SZREG)(PREG(sp))
 
-	lla		a0, ImageBase
-	lla		a1, _DYNAMIC
+	lla		PREG(a0), ImageBase
+	lla		PREG(a1), _DYNAMIC
 	call		_relocate
 	bne		a0, zero, 0f
 
-	LOAD_LONG(a1, 1)
-	LOAD_LONG(a0, 0)
+	REG_L PREG(a1), (1*SZREG)(PREG(sp))
+	REG_L PREG(a0), (0)(PREG(sp))
 	call		efi_main
 
-	LOAD_LONG(ra, 2)
+	REG_L PREG(ra), (2*SZREG)(PREG(sp))
 
-0:	addi		sp, sp, (SIZE_LONG * 3)
+0: add PREG(sp), PREG(sp), -(SZREG * 3)
 	ret

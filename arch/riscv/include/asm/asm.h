@@ -24,6 +24,8 @@
 
 # define __PCSR(r)			r ## c
 # define PCSR(r)			__PCSR(r)
+
+# define lla lgc
 #else
 # define REG_NUM(r)			"c" #r
 
