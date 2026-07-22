@@ -19,6 +19,7 @@
       reg = <0>;
       status = "okay";
       compatible = "eth, cva6", "riscv";
+      riscv,isa = "rv64imafdc";
       riscv,base = "rv64i";
       riscv,isa-extensions = "i", "m", "a", "f", "d", "c", "b",
                              "zifencei", "zicsr",
