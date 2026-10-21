@@ -7,7 +7,7 @@
 #include <cpu_func.h>
 #include <dm.h>
 #include <asm/asm.h>
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 #include <asm/cheri.h>
 #endif
 #include <asm/insn-def.h>
@@ -77,7 +77,7 @@ static void cbo_op(int op_type, unsigned long start,
 	}
 	start &= ~(UL(zicbom_block_size - 1));
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	base = cheri_build_infinite_cap(start);
 #else
 	base = (void*)start;
@@ -126,7 +126,7 @@ __weak void invalidate_icache_range(unsigned long start, unsigned long end)
 
 __weak void invalidate_dcache_range(unsigned long start, unsigned long end)
 {
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	cbo_flush(start, end);
 #else
 	cbo_inval(start, end);

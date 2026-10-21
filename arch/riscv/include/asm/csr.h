@@ -221,7 +221,7 @@
 			      : "memory");			\
 })
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 #define cap_csr_swap(csr, val)					\
 ({								\
 	uintptr_t __v = val;					\

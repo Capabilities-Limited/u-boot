@@ -36,7 +36,7 @@ static void show_efi_loaded_images(uintptr_t epc)
 static void __maybe_unused show_regs(struct pt_regs *regs)
 {
 #ifdef CONFIG_SHOW_REGS
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	printf("\nCRA:  " CREG_FMT "\n", (void *)regs->ra);
 	printf("CSP:  " CREG_FMT "\nCGP:  " CREG_FMT "\nCTP:  " CREG_FMT "\n",
 	       (void *)regs->sp, (void *)regs->gp, (void *)regs->tp);
@@ -58,7 +58,7 @@ static void __maybe_unused show_regs(struct pt_regs *regs)
 	       (void *)regs->s10, (void *)regs->s11, (void *)regs->t3);
 	printf("CT4:  " CREG_FMT "\nCT5:  " CREG_FMT "\nCT6:  " CREG_FMT "\n",
 	       (void *)regs->t4, (void *)regs->t5, (void *)regs->t6);
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	printf("\nSP:  " REG_FMT " GP:  " REG_FMT " TP:  " REG_FMT "\n",
 	       regs->sp, regs->gp, regs->tp);
 	printf("T0:  " REG_FMT " T1:  " REG_FMT " T2:  " REG_FMT "\n",
@@ -79,7 +79,7 @@ static void __maybe_unused show_regs(struct pt_regs *regs)
 	       regs->s10, regs->s11, regs->t3);
 	printf("T4:  " REG_FMT " T5:  " REG_FMT " T6:  " REG_FMT "\n",
 	       regs->t4, regs->t5, regs->t6);
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 #endif
 }
 
@@ -94,7 +94,7 @@ static void __maybe_unused show_backtrace(struct pt_regs *regs)
 	/* there are a few entry points where the s0 register is
 	 * set to gd, so to avoid changing those, just abort if
 	 * the value is the same */
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	while (fp && fp != (uintptr_t *)gd) {
 		ra = fp[-1];
 		printf("%3d: CFP: " CREG_FMT " CRA: " CREG_FMT,
@@ -108,7 +108,7 @@ static void __maybe_unused show_backtrace(struct pt_regs *regs)
 		fp = (uintptr_t *)fp[-2];
 		count++;
 	}
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	while (fp != NULL && fp != (uintptr_t *)gd) {
 		ra = fp[-1];
 		printf("%3d: FP: " REG_FMT " RA: " REG_FMT,
@@ -123,7 +123,7 @@ static void __maybe_unused show_backtrace(struct pt_regs *regs)
 		fp = (uintptr_t *)fp[-2];
 		count++;
 	}
-#endif  /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif  /* !__CHERI__ */
 }
 
 /**
