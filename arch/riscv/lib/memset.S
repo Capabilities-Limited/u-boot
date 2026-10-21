@@ -53,7 +53,7 @@ WEAK(memset)
 	addi a4, a4, 32*SZXREG  /* Calculate initial offset */
 
 	/* Adjust start address with offset */
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	neg t1, a4
 	add t0, t0, t1
 #else

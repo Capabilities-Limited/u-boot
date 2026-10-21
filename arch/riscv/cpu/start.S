@@ -15,10 +15,10 @@
 #include <system-constants.h>
 #include <asm/asm.h>
 #include <asm/encoding.h>
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 #include <elf_cheri.h>
 #include <asm/cheri.h>
-#endif /* CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* __CHERI__ */
 #include <generated/asm-offsets.h>
 
 #ifdef CONFIG_32BIT
@@ -42,18 +42,12 @@ _start:
 	csrr	a0, CSR_MHARTID
 #endif
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
-#ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
+#ifdef __CHERI__
 	/* Run u-boot in Capability pointer mode */
 	ymodeswy
-#endif /* CONFIG_RISCV_ISA_ZCHERIHYBRID */
 	auipc s6, 0	/* s6 -> Use pcc as the Infinite Capability */
 	yaddrw	s6, s6, zero
-#ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	li	t0, 1
-	ymodew	s6, s6, t0	/* Infinite capability is in integer mode */
-#endif /* CONFIG_RISCV_ISA_ZCHERIHYBRID */
-#endif /* CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* __CHERI__ */
 
 	/*
 	 * Save hart id and dtb pointer. The thread pointer register is not
@@ -110,7 +104,7 @@ call_board_init_f:
 	and	t0, t0, -16		/* force 16 byte alignment */
 
 	/* setup stack */
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 #if CONFIG_IS_ENABLED(SMP)
 	/* tp: hart id */
 	slli	t1, tp, CONFIG_STACK_SIZE_SHIFT
@@ -125,7 +119,7 @@ call_board_init_f:
 	yaddrw	sp, t1, t0
 	li t1,	~CHERI_PERM_STACK
 	ypermc	sp, sp, t1
-#else  /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else  /* !__CHERI__ */
 #if CONFIG_IS_ENABLED(SMP)
 	/* tp: hart id */
 	slli	t1, tp, CONFIG_STACK_SIZE_SHIFT
@@ -133,7 +127,7 @@ call_board_init_f:
 #else
 	mv	sp, t0
 #endif
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 
 /*
  * Now sp points to the right stack belonging to current CPU.
@@ -145,19 +139,19 @@ call_board_init_f:
 clear_stack:
 	li	t1, 1
 	slli	t1, t1, CONFIG_STACK_SIZE_SHIFT
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	sub	t1, sp, t1
 	yaddrw	t1, sp, t1
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	sub	t1, sp, t1
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 clear_stack_loop:
 	REG_S	zero, 0(t1)		/* t1 is always 16 byte aligned */
 	add		t1, t1, SZREG
 	blt	t1, sp, clear_stack_loop
 #endif
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	/* initialize cap table before executing c functions */
 cheri_captable_init:
 	PC_PTR_L	t1, __cap_relocs_start
@@ -166,17 +160,12 @@ cheri_captable_init:
 
 2:	XREG_L	t3, 0(t1)	/* t3 <-- capreloc:capability_location */
 	yaddrw	t3, s6, t3 	/* t3 <-- W permission capability points to capability */
-#ifdef CONFIG_RISCV_ZCHERI_PRE_CAP_RELOCS_INIT
+#ifdef CONFIG_RISCV_Y_PRE_CAP_RELOCS_INIT
 	PREG_L	t5, 0(t3)	/* t5 <-- pre initialized capability */
 	yeq 	t4, t5, zero
 	bnez	t4, 10f
-#ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	scmode	t4, s6, zero
-	ybld	t5, t4, t5 /* set tag for pre initialized capability by cbld */
-#else /* !CONFIG_RISCV_ISA_ZCHERIHYBRID */
-	ybld	t5, s6, t5 /* set tag for pre initialized capability by cbld */
-#endif /* !CONFIG_RISCV_ISA_ZCHERIHYBRID */
-#else /* !CONFIG_RISCV_ZCHERI_PRE_CAP_RELOCS_INIT */
+	ybld	t5, s6, t5 /* set tag for pre initialized capability by ybld */
+#else /* !CONFIG_RISCV_Y_PRE_CAP_RELOCS_INIT */
 	XREG_L	t4, SZXREG(t1)	/* t4 <-- capreloc:capability_base */
 	bnez	t4, 3f		/* write cnull if capreloc:capability_base is zero */
 
@@ -184,11 +173,6 @@ cheri_captable_init:
 
 3:	/* Set address/base */
 	yaddrw	t5, s6, t4 	/* t5 <-- Set base from a Infinite capability */
-
-#ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	/* Set M-bit for all capability as purecap mode */
-	ymodew	t5, t5, zero
-#endif /* CONFIG_RISCV_ISA_ZCHERIHYBRID */
 
 	/* Do not set tight bounds for functions for default setting -cheri-cap-table-abi=pcrel  */
 	XREG_L	t4, (SZXREG * 4)(t1)	/* t4 <-- capreloc:capability_flags */
@@ -227,12 +211,12 @@ cheri_captable_init:
 	/* Seal entry */
 	yseale	t5, t5
 9:
-#endif /* !CONFIG_RISCV_ZCHERI_PRE_CAP_RELOCS_INIT */
+#endif /* !CONFIG_RISCV_Y_PRE_CAP_RELOCS_INIT */
 	PREG_S	t5, 0(t3)
 10:
 	add	t1, t1, (SZXREG * 5)
 	blt	t1, t2, 2b
-#endif /* CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* __CHERI__ */
 
 call_board_init_f_0:
 	/* find top of reserve space */
@@ -249,12 +233,12 @@ call_board_init_f_0:
 	 * Save global data pointer for later. We don't set it here because it
 	 * is not initialized yet.
 	 */
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	/* Setup global data pointer with an almighty cap */
 	yaddrw	s0, s6, a0
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	mv	s0, a0
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 
 	/* Configure proprietary settings and customized CSRs of harts */
 call_harts_early_init:
@@ -286,7 +270,7 @@ call_harts_early_init:
 	mv a0, s0
 	jal	board_init_f_init_reserve
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	PREG_S	s6, GD_CHERI_INFINITE_CAP(gp)
 #endif
 
@@ -354,7 +338,7 @@ spl_stack_gd_setup:
 
 	/* skip setup if we did not relocate */
 	beqz	a0, spl_call_board_init_r
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 #if CONFIG_IS_ENABLED(SMP)
 	li	t1, CONFIG_NR_CPUS
 #else
@@ -365,14 +349,14 @@ spl_stack_gd_setup:
 	yaddrw	t2, s6, t1
 	ybndsw	t1, t2, t0
 	yaddrw	s0, t1, a0
-#else /* CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* __CHERI__ */
 	mv	s0, a0
-#endif /* CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* __CHERI__ */
 
 	/* setup stack on main hart */
 #if CONFIG_IS_ENABLED(SMP)
 	/* tp: hart id */
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	li		t0, 1
 	slli	t1, t0, CONFIG_STACK_SIZE_SHIFT
 	slli	t0, tp, CONFIG_STACK_SIZE_SHIFT
@@ -385,10 +369,10 @@ spl_stack_gd_setup:
 	yaddrw	sp, t0, t2
 	li t0,	~CHERI_PERM_STACK
 	ypermc	sp, sp, t0
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	slli	t0, tp, CONFIG_STACK_SIZE_SHIFT
 	sub	sp, s0, t0
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 #else
 	mv	sp, s0
 #endif
@@ -437,7 +421,7 @@ relocate_code:
  *Set up the stack
  */
 stack_setup:
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 #if CONFIG_IS_ENABLED(SMP)
 	/* tp: hart id */
 	slli	t1, tp, CONFIG_STACK_SIZE_SHIFT
@@ -454,7 +438,7 @@ stack_setup:
 	yaddrw	sp, t2, t0
 	li t0,	~CHERI_PERM_STACK
 	ypermc	sp, sp, t0
-#else /* CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* __CHERI__ */
 #if CONFIG_IS_ENABLED(SMP)
 	/* tp: hart id */
 	slli	t0, tp, CONFIG_STACK_SIZE_SHIFT
@@ -462,17 +446,17 @@ stack_setup:
 #else
 	mv	sp, s2
 #endif
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 
 	PC_PTR_L	t0, _start
 	sub	t6, s4, t0		/* t6 <- relocation offset */
 	beq	t0, s4, clear_bss	/* skip relocation */
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	yaddrw	t1, s6, s4 /* t1 <- scratch for copy_loop */
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	mv	t1, s4			/* t1 <- scratch for copy_loop */
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 	PC_PTR_L	t2, __bss_start		/* t2 <- source end address */
 
 copy_loop:
@@ -485,7 +469,7 @@ copy_loop:
 /*
  * Update dynamic relocations after board_init_f
  */
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 fix_cap_relocs:
 	PC_PTR_L	t1, __cap_relocs_start
 	PC_PTR_L	t2, __cap_relocs_end
@@ -514,18 +498,13 @@ fix_cap_relocs:
 	ybndsrw	t4, t4, t0	/* Set bounds */
 	add		t4, t4, t5	/* Set offset */
 4:
-#ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	ymodew	t5, s6, zero
-	ybld	t4, t5, t4 /* set tag by cbld from a infinite capability */
-#else /* !CONFIG_RISCV_ISA_ZCHERIHYBRID */
 	ybld	t4, s6, t4 /* set tag by cbld from a infinite capability */
-#endif /* !CONFIG_RISCV_ISA_ZCHERIHYBRID */
 
 	PREG_S	t4, 0(t3)
 10:
 	add	t1, t1, (SZXREG * 5)
 	blt	t1, t2, 2b
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 fix_rela_dyn:
 	PC_PTR_L	t1, __rel_dyn_start
 	PC_PTR_L	t2, __rel_dyn_end
@@ -567,23 +546,19 @@ fix_rela_dyn:
 10:
 	add	t1, t1, (SZXREG * 3)
 	blt	t1, t2, 6b
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 
 /*
  * trap update
 */
 	PC_PTR_L	t0, trap_entry
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	add	t1, t0, t6
 	yaddrw	t0, s6, t1
-#ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	ymodew	t0, t0, zero
-#endif /* CONFIG_RISCV_ISA_ZCHERIHYBRID */
 	li t1,	~CHERI_PERM_EXECUTABLE
 	ypermc	t0, t0, t1
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
 	add	t0, t0, t6
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 	csrw	MODE_PREFIX(tvec), t0
 
 clear_bss:
@@ -593,9 +568,9 @@ clear_bss:
 	add	t1, t1, t6		/* t1 <- rel __bss_end in RAM */
 	beq	t0, t1, relocate_secondary_harts
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	yaddrw	t0, s6, t0
-#endif /* CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* __CHERI__ */
 
 clbss_l:
 	REG_S	zero, 0(t0)		/* clear loop... */
@@ -608,15 +583,12 @@ relocate_secondary_harts:
 	PC_PTR_L	t0, secondary_hart_relocate
 	add	a0, t0, t6
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	yaddrw	a0, s6, a0
-#ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	ymodew	a0, a0, zero
-#endif /* CONFIG_RISCV_ISA_ZCHERIHYBRID */
 	li t1,	~CHERI_PERM_EXECUTABLE
 	ypermc	a0, a0, t1
 	yseale a0, a0
-#endif /* CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* __CHERI__ */
 
 	/* store relocation offset */
 	mv	s5, t6
@@ -647,15 +619,12 @@ call_board_init_r:
 	PC_PTR_L	t0, board_init_r        /* offset of board_init_r() */
 	add	t4, t0, t6		/* real address of board_init_r() */
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	yaddrw	t4, s6, t4
-#ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	ymodew	t4, t4, zero
-#endif /* CONFIG_RISCV_ISA_ZCHERIHYBRID */
 	li t1,	~CHERI_PERM_EXECUTABLE
 	ypermc	t4, t4, t1
 	yseale t4, t4
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 
 /*
  * setup parameters for board_init_r
@@ -683,7 +652,7 @@ secondary_hart_relocate:
 	/* tp: hart id */
 
 	/* setup stack */
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	li	t0, 1
 	slli	t1, t0, CONFIG_STACK_SIZE_SHIFT
 	slli	t0, tp, CONFIG_STACK_SIZE_SHIFT
@@ -692,10 +661,10 @@ secondary_hart_relocate:
 	yaddrw	t1, a1, t3
 	ybndsw	t3, t1, t0
 	yaddrw	sp, t3, t2
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	slli	t0, tp, CONFIG_STACK_SIZE_SHIFT
 	sub	sp, a1, t0
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 
 	/* update global data pointer */
 	mv	gp, a2

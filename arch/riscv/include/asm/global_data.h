@@ -46,7 +46,7 @@ struct arch_global_data {
 #endif
 	struct resume_data *resume;
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	void *infinite_cap;
 #endif
 };
