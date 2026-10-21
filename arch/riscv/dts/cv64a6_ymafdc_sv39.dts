@@ -25,7 +25,7 @@
                              "zifencei", "zicsr",
                              "zbc", "zcb", "zkn",
                              "zicntr", "zihpm",
-                             "zcherihybrid", "zcheripte", "zcherilevels", "zcheripurecap";
+                             "zyhybrid", "svyrg", "zylg", "zypurecap";
       mmu-type = "riscv,sv39";
       tlb-split;
       // HLIC - hart local interrupt controller

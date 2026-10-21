@@ -182,21 +182,21 @@ section_table:
 	.align		12
 	.globl		_start
 _start:
-	add PREG(sp), PREG(sp), -(SZREG * 3)
-	REG_S PREG(a0), (0)(PREG(sp))
-	REG_S PREG(a1), (1*SZREG)(PREG(sp))
-	REG_S PREG(ra), (2*SZREG)(PREG(sp))
+	add sp, sp, -(SZREG * 3)
+	REG_S a0, (0)(sp)
+	REG_S a1, (1*SZREG)(sp)
+	REG_S ra, (2*SZREG)(sp)
 
-	lla		PREG(a0), ImageBase
-	lla		PREG(a1), _DYNAMIC
+	lla		a0, ImageBase
+	lla		a1, _DYNAMIC
 	call		_relocate
 	bne		a0, zero, 0f
 
-	REG_L PREG(a1), (1*SZREG)(PREG(sp))
-	REG_L PREG(a0), (0)(PREG(sp))
+	REG_L a1, (1*SZREG)(sp)
+	REG_L a0, (0)(sp)
 	call		efi_main
 
-	REG_L PREG(ra), (2*SZREG)(PREG(sp))
+	REG_L ra, (2*SZREG)(sp)
 
-0: add PREG(sp), PREG(sp), -(SZREG * 3)
+0: add sp, sp, -(SZREG * 3)
 	ret
