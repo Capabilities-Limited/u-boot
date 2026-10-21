@@ -158,7 +158,7 @@ static void show_code(uintptr_t epc)
 		printf("%04x%s", pos[i], i + 1 == len ? ")\n" : " ");
 }
 
-static void _exit_trap(ulong code, uintptr_t epc, ulong tval, ulong tval2, struct pt_regs *regs)
+static void _exit_trap(ulong code, uintptr_t epc, ulong tval, struct pt_regs *regs)
 {
 	static const char * const exception_code[] = {
 		"Instruction address misaligned",
@@ -177,51 +177,38 @@ static void _exit_trap(ulong code, uintptr_t epc, ulong tval, ulong tval2, struc
 		"Load page fault",
 		"Reserved",
 		"Store/AMO page fault",
+#if defined(__CHERI__)
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"Reserved",
+		"CHERI Instruction Access Fault",
+		"CHERI Load Access Fault",
+		"CHERI Store/AMO Access Fault",
+		"CHERI Load Capability Fault",
+		"CHERI Store/AMO Page Fault",
+#endif /* __CHERI__ */
 	};
 
 	if (gd->arch.resume) {
 		gd->arch.resume->code = code;
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP
-		gd->arch.resume->tval = tval;
-		gd->arch.resume->tval2 = tval2;
-#endif /* CONFIG_RISCV_ISA_ZCHERIPURECAP */
 		longjmp(gd->arch.resume->jump, 1);
 	}
 
 	if (code < ARRAY_SIZE(exception_code)) {
 		printf("Unhandled exception: %s\n", exception_code[code]);
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP
-	} else if (code == EXC_CHERI_FAULT) {
-		static const char * const cheri_exception_type[] = {
-			[EXC_CHERI_TYPE_INST] = "Instruction access fault",
-			[EXC_CHERI_TYPE_DATA] = "Data fault due to load, store or AMO",
-			[EXC_CHERI_TYPE_JMP_BRANCH] = "Jump or branch fault",
-		};
-
-		static const char * const cheri_exception_cause[] = {
-			[EXC_CHERI_CAUSE_TAG] = "Tag violation",
-			[EXC_CHERI_CAUSE_SEAL] = "Seal violation",
-			[EXC_CHERI_CAUSE_PERM] = "Permission violation",
-			[EXC_CHERI_CAUSE_INVALID_ADDR] = "Invalid address violation",
-			[EXC_CHERI_CAUSE_BOUNDS] = "Bounds violation",
-		};
-
-		ulong cheri_type = XTVAL2_CHERI_TYPE(tval2);
-		ulong cheri_cause = XTVAL2_CHERI_CAUSE(tval2);
-
-		printf("Unhandled CHERI exception: (type: 0x%lx) (cause: 0x%lx)\n",
-		       cheri_type,
-			   cheri_cause);
-
-		if (cheri_type < ARRAY_SIZE(cheri_exception_type)) {
-			printf("CHERI exception type: %s\n", cheri_exception_type[cheri_type]);
-			if (cheri_type == EXC_CHERI_TYPE_DATA)
-				printf("CHERI data fault on address: 0x%lx\n", tval);
-		}
-
-		if (cheri_cause < ARRAY_SIZE(cheri_exception_cause))
-			printf("CHERI exception cause: %s\n", cheri_exception_cause[cheri_cause]);
-#endif /* CONFIG_RISCV_ISA_ZCHERIPURECAP */
 	} else {
 		printf("Unhandled exception code: %ld\n", code);
 	}
@@ -262,7 +249,7 @@ int disable_interrupts(void)
 	return 0;
 }
 
-uintptr_t handle_trap(ulong cause, uintptr_t epc, ulong tval, ulong tval2, struct pt_regs *regs)
+uintptr_t handle_trap(ulong cause, uintptr_t epc, ulong tval, struct pt_regs *regs)
 {
 	ulong is_irq, irq;
 
@@ -306,11 +293,11 @@ uintptr_t handle_trap(ulong cause, uintptr_t epc, ulong tval, ulong tval2, struc
 			timer_interrupt(0);	/* handle timer interrupt */
 			break;
 		default:
-			_exit_trap(cause, epc, tval, tval2, regs);
+			_exit_trap(cause, epc, tval, regs);
 			break;
 		};
 	} else {
-		_exit_trap(cause, epc, tval, tval2, regs);
+		_exit_trap(cause, epc, tval, regs);
 	}
 
 	return epc;

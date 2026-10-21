@@ -9,19 +9,19 @@
 #include <asm/csr.h>
 #else /* __ASSEMBLY__ */
 /* Capability permissions definition for assembly */
-#if defined(__riscv_zcheripurecap)
+#if defined(__CHERI__)
 #define CHERI_PERM_CAP			__CHERI_CAP_PERMISSION_CAPABILITY__
 #define CHERI_PERM_WRITE		__CHERI_CAP_PERMISSION_WRITE__
 #define CHERI_PERM_READ			__CHERI_CAP_PERMISSION_READ__
 #define CHERI_PERM_EXECUTE		__CHERI_CAP_PERMISSION_EXECUTE__
 #define CHERI_PERM_SYSTEM_REGS		__CHERI_CAP_PERMISSION_ACCESS_SYSTEM_REGISTERS__
 #define CHERI_PERM_LOAD_MUTABLE		__CHERI_CAP_PERMISSION_LOAD_MUTABLE__
-#if defined(__riscv_zcherilevels)
+#if defined(__riscv_zylg)
 #define CHERI_PERM_ELEVATE_LEVEL	__CHERI_CAP_PERMISSION_ELEVATE_LEVEL__
 #define CHERI_PERM_STORE_LEVEL		__CHERI_CAP_PERMISSION_STORE_LEVEL__
 #define CHERI_PERM_CAPABILITY_LEVEL	__CHERI_CAP_PERMISSION_CAPABILITY_LEVEL__
-#endif /* defined(__riscv_zcherilevels) */
-#endif /* defined(__riscv_zcheripurecap) */
+#endif /* defined(__riscv_zylg) */
+#endif /* defined(__CHERI__) */
 #endif /* __ASSEMBLY__ */
 
 /* Capability permissions for Stack */
@@ -65,7 +65,7 @@ static inline enum cheri_execution_mode cheri_execution_mode_get(const void *cap
 {
 	enum cheri_execution_mode mode = RISCV_CHERI_CAP_PTR_EXE_MODE;
 #ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	__asm__ __volatile__("gcmode %0, %1\n" : "+r" (mode) : "C" (cap));
+	__asm__ __volatile__("ymoder %0, %1\n" : "+r" (mode) : "C" (cap));
 #endif
 	return mode;
 }
@@ -73,7 +73,7 @@ static inline enum cheri_execution_mode cheri_execution_mode_get(const void *cap
 static inline void *cheri_execution_mode_set(const void *cap, enum cheri_execution_mode mode)
 {
 #ifdef CONFIG_RISCV_ISA_ZCHERIHYBRID
-	__asm__ __volatile__("scmode %0, %0, %1\n" : "+C" (cap) : "r" (mode));
+	__asm__ __volatile__("ymodew %0, %0, %1\n" : "+C" (cap) : "r" (mode));
 #endif
 	return (void *)cap;
 }
