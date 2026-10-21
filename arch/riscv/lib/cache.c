@@ -32,17 +32,29 @@ static int zicbom_block_size;
 extern unsigned int riscv_get_cbom_block_size(void);
 static inline void do_cbo_clean(void *base)
 {
-	asm volatile ("mv " PREG(a0) ", %0\n" CBO_CLEAN(%0) :: PTR_REG(base) : PREG(a0), "memory");
+#if defined(__CHERI__)
+	asm volatile ("ymv a0, %0\n" CBO_CLEAN(%0) :: "C"(base) : "ca0", "memory");
+#else
+	asm volatile ("mv a0, %0\n" CBO_CLEAN(%0) :: "r"(base) : "a0", "memory");
+#endif
 }
 
 static inline void do_cbo_flush(void *base)
 {
-	asm volatile ("mv " PREG(a0) ", %0\n" CBO_FLUSH(%0) :: PTR_REG(base) : PREG(a0), "memory");
+#if defined(__CHERI__)
+	asm volatile ("ymv a0, %0\n" CBO_FLUSH(%0) :: "C"(base) : "ca0", "memory");
+#else
+	asm volatile ("mv a0, %0\n" CBO_FLUSH(%0) :: "r"(base) : "a0", "memory");
+#endif
 }
 
 static inline void do_cbo_inval(void *base)
 {
-	asm volatile ("mv " PREG(a0) ", %0\n" CBO_INVAL(%0) :: PTR_REG(base) : PREG(a0), "memory");
+#if defined(__CHERI__)
+	asm volatile ("ymv a0, %0\n" CBO_INVAL(%0) :: "C"(base) : "ca0", "memory");
+#else
+	asm volatile ("mv a0, %0\n" CBO_INVAL(%0) :: "r"(base) : "a0", "memory");
+#endif
 }
 
 static void cbo_op(int op_type, unsigned long start,

@@ -33,10 +33,10 @@ ifeq ($(CONFIG_RISCV_ISA_ZBB),y)
 	ARCH_ZBB = _zbb
 endif
 ifeq ($(CONFIG_RISCV_ISA_ZCHERIPURECAP),y)
-	ARCH_CHERI = zcheripurecap
+	ARCH_CHERI = zypurecap_zylg
 endif
 ifeq ($(CONFIG_RISCV_ISA_ZCHERIHYBRID),y)
- 	ARCH_CHERI = zcherihybrid
+	ARCH_CHERI = zyhybrid_zylg
 endif
 ifeq ($(CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI),y)
 ifeq ($(CONFIG_ARCH_RV64I),y)
