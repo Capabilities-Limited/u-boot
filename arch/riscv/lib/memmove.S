@@ -18,12 +18,12 @@ WEAK(memmove)
 	 */
 	sub	t0, a0, a1
 	bltu	t0, a2, 1f
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	PTR_L	t0, __memcpy
 	jr	t0
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	tail	__memcpy
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 1:
 
 	/*
@@ -45,11 +45,11 @@ WEAK(memmove)
 	 * the fixed overhead. For CHERI, it is chosen to be capability aligned
 	 * for tag bit preserved.
 	 */
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	li	a3, SZPREG
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 	li	a3, 16
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 	bltu	a2, a3, .Lbyte_copy_tail
 
 	/*
@@ -71,7 +71,7 @@ WEAK(memmove)
 	 * word-wise copy.
 	 */
 	andi	a3, a1, SZREG-1
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 	bnez	a3, .Lbyte_copy_tail
 #else
 	bnez	a3, .Lmisaligned_word_copy

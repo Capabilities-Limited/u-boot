@@ -12,14 +12,14 @@
 #define __ASM_STR(x)	#x
 #endif
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 #ifdef __ASSEMBLY__
 # define lla lgy
 # define mv ymv
 # define add yadd
 # define addi yaddi
 #endif
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 
 #if __riscv_xlen == 64
 #define __REG_SEL(a, b)	__ASM_STR(a)
@@ -29,7 +29,7 @@
 #error "Unexpected __riscv_xlen"
 #endif
 
-#ifdef CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI
+#ifdef __CHERI__
 #define REG_L		__REG_SEL(ly, ly)
 #define REG_S		__REG_SEL(sy, sy)
 #define SZREG		__REG_SEL(16, 8)
@@ -71,7 +71,7 @@
 #else
 #error "Unexpected __SIZEOF_POINTER__"
 #endif
-#else /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#else /* !__CHERI__ */
 #define REG_L		__REG_SEL(ld, lw)
 #define REG_S		__REG_SEL(sd, sw)
 #define SZREG		__REG_SEL(8, 4)
@@ -113,7 +113,7 @@
 #else
 #error "Unexpected __SIZEOF_POINTER__"
 #endif
-#endif /* !CONFIG_RISCV_ISA_ZCHERIPURECAP_ABI */
+#endif /* !__CHERI__ */
 
 #if (__SIZEOF_INT__ == 4)
 #define RISCV_INT		__ASM_STR(.word)
