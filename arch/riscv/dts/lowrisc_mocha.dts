@@ -1,0 +1,116 @@
+// Copyright lowRISC and contributors (COSMIC project).
+// Licensed under the Apache License, Version 2.0, see LICENSE for details.
+// SPDX-License-Identifier: Apache-2.0
+
+/dts-v1/;
+
+/ {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    compatible = "lowrisc,mocha";
+    model = "lowrisc,mocha";
+
+    memory@80000000 {
+        device_type = "memory";
+        reg = <0x0 0x80000000 0x0 0x3f800000>; // (1 GiB - 8 MiB)
+    };
+
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        timebase-frequency = <50000000>; // 50 MHz
+
+        cpu@0 {
+            compatible = "riscv";
+            device_type = "cpu";
+            reg = <0>;
+            riscv,isa = "rv64ymafdc_zyhybrid_zicsr_zifencei";
+            mmu-type = "riscv,sv39";
+            status = "okay";
+            riscv,base = "rv64y";
+            riscv,isa-extensions = "y", "m", "a", "c", "f", "d",
+                             "zifencei", "zicsr",
+                             "zyhybrid", "svyrg", "zylg";
+      tlb-split;
+
+            cpu0intc: interrupt-controller {
+                interrupt-controller;
+                #interrupt-cells = <1>;
+                compatible = "riscv,cpu-intc";
+            };
+        };
+    };
+
+    soc {
+        #address-cells = <2>;
+        #size-cells = <2>;
+        compatible = "simple-bus";
+        ranges;
+
+        ethernet: ethernet@30000000 {
+            compatible = "lowrisc,eth-v1";
+            reg = <0x0 0x30000000 0x0 0x6040>;
+            interrupts-extended = <&plic 31>; // Ethernet is PLIC interrupt source 31
+        };
+
+        gpio: gpio@40000000 {
+            compatible = "lowrisc,opentitan-gpio-v1";
+            reg = <0x0 0x40000000 0x0 0x48>;
+            gpio-controller;
+            ngpios = <32>;
+        };
+
+        serial@41000000 {
+            compatible = "lowrisc,opentitan-uart-v2,lowrisc-fake";
+            reg = <0x0 0x41000000 0x0 0x30>;
+            interrupts-extended = <&plic 8>; // UART is PLIC interrupt source 8
+        };
+
+        timer@44000000 {
+            compatible = "lowrisc,opentitan-rv-timer-v1";
+            reg = <0x0 0x44000000 0x0 0x120>;
+            interrupts-extended = <&cpu0intc 7>; // M-mode timer interrupt
+        };
+
+        spi@45000000 {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            compatible = "lowrisc,opentitan-spi-host-v3";
+            reg = <0x0 0x45000000 0x0 0x38>;
+            tx-fifo-depth = <288>;
+            rx-fifo-depth = <256>;
+            num-cs = <1>;
+
+            mmc@0 {
+                compatible = "mmc-spi-slot";
+                reg = <0>;
+                gpios = <&gpio 31 1>; // Presence detect on most-significant GPIO input
+                spi-max-frequency = <50000000>;
+            };
+        };
+
+        plic: interrupt-controller@48000000 {
+            // Compatible with the standard and SiFive PLIC memory layout
+            compatible = "lowrisc,opentitan-plic",
+                         "sifive,plic-1.0.0";
+            interrupt-controller;
+            #address-cells = <0>;
+            #interrupt-cells = <1>;
+            reg = <0x0 0x48000000 0x0 0x4000000>;
+            interrupts-extended = <&cpu0intc 11>, // Context 0: M-mode external interrupt
+                                  <&cpu0intc 9>; // Context 1: S-mode external interrupt
+            riscv,ndev = <32>;
+        };
+
+        // End of PLIC memory region is for software interrupts,
+        // model this as another interrupt controller that delivers the software interrupts
+        plicsw: interrupt-controller@4c000000 {
+            compatible = "lowrisc,opentitan-plicsw";
+            interrupt-controller;
+            #address-cells = <0>;
+            #interrupt-cells = <1>;
+            reg = <0x0 0x4c000000 0x0 0x4000>;
+            interrupts-extended = <&cpu0intc 3>; // M-mode software interrupt
+        };
+    };
+};
